@@ -2,9 +2,15 @@ namespace jwt_test
 {
     public static class JwtConstants
     {
-        public const string JwtSuperSecretKey = "RWEH$%G$F$GH^%&^J^^&H$GG££FDC££$VV%H&DHH^&&J&^&*K&&&*K&"; //store in a k8s secret
-        public const string JwtTokenIssuer = "https://token.issuer.com"; //identifies the issuing service 
-        public const string JwtTokenAudience = "https://token.audience.com"; //limit validation of tokens to specific token consumers 
+        /// <summary>
+        /// SuperSecretKey is the token signing key, store this somewhere secure i.e. in a k8s secret
+        /// </summary>
+        public const string SuperSecretKey = "RWEH$%G$F$GH^%&^J^^&H$GG££FDC££$VV%H&DHH^&&J&^&*K&&&*K&";
+
+        /// <summary>
+        /// Audience limits validation of tokens to a specific token consumer (applicationId, similar to okta clientId)
+        /// </summary>
+        public const string Audience = "CE6559AA-54FA-4D4C-B879-AF1BF54FC9B8"; 
     }    
 }
 

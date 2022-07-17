@@ -40,9 +40,9 @@ namespace jwt_test.Controllers
             });
         }
 
-        private static string GenerateToken(int userId, string userName, string emailAddress)
+        private string GenerateToken(int userId, string userName, string emailAddress)
         {
-            var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(JwtConstants.JwtSuperSecretKey));
+            var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(JwtConstants.SuperSecretKey));
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var tokenDescriptor = new SecurityTokenDescriptor
@@ -54,13 +54,12 @@ namespace jwt_test.Controllers
                     new Claim(ClaimTypes.Email, emailAddress),
                     new Claim(ClaimTypes.Role, "AD Group 1"),
                     new Claim(ClaimTypes.Role, "AD Group 2")
-                    //add a whole bunch more for context - whatever is wanted/needed
+                    //add more claims as required for user context
                 }),
                 IssuedAt = DateTime.UtcNow,
-                Expires = DateTime.UtcNow
-                    .AddHours(8), //useful for time limiting the validity of tokens and also useful for token validation caching purposes 
-                Issuer = JwtConstants.JwtTokenIssuer,
-                Audience = JwtConstants.JwtTokenAudience,
+                Expires = DateTime.UtcNow.AddHours(8), //limit the validity of the token to 8 hrs
+                Issuer = HttpContext.Request.Host.ToUriComponent(), //make the calling application the issuer of the token
+                Audience = JwtConstants.Audience, //limit the audience of this token to the calling application (applicationId, similar to okta clientId)
                 SigningCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature)
             };
 
@@ -68,7 +67,7 @@ namespace jwt_test.Controllers
             return tokenHandler.WriteToken(token);
         }
 
-        private static KeyValuePair<bool, SecurityToken?> ValidateToken(string token)
+        private KeyValuePair<bool, SecurityToken?> ValidateToken(string token)
         {
             SecurityToken outToken;
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -79,9 +78,9 @@ namespace jwt_test.Controllers
                     ValidateIssuerSigningKey = true,
                     ValidateIssuer = true,
                     ValidateAudience = true,
-                    ValidIssuer = JwtConstants.JwtTokenIssuer,
-                    ValidAudience = JwtConstants.JwtTokenAudience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(JwtConstants.JwtSuperSecretKey))
+                    ValidIssuer = HttpContext.Request.Host.ToUriComponent(),
+                    ValidAudience = JwtConstants.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(JwtConstants.SuperSecretKey))
                 }, out outToken);
             }
             catch
