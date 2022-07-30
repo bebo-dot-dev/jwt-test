@@ -1,10 +1,10 @@
+using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 namespace jwt_test
@@ -12,7 +12,7 @@ namespace jwt_test
     public class Startup
     {
         public void ConfigureServices(IServiceCollection services)
-        {            
+        {
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "JWT test API", Version = "v1" });
@@ -51,10 +51,40 @@ namespace jwt_test
                 x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-            .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, configureOptions: null);
-            
-            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<IConfigureOptions<JwtBearerOptions>, JwtBearerConfigureOptionsService>();
+            .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options => {
+                
+                //setup for okta, ref: https://developer.okta.com/code/dotnet/jwt-validation/#validate-a-token
+                
+                //an okta issuer looks like "https://<okta domain>.okta.com/oauth2/<okta custom auth server Id>"; 
+                const string issuer = "https://xxxxxx.okta.com/oauth2/xxxxxxxx";
+                
+                /*var configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+                    $"{issuer}/.well-known/openid-configuration",
+                    new OpenIdConnectConfigurationRetriever(),
+                    new HttpDocumentRetriever());
+                
+                options.ConfigurationManager = configurationManager;*/
+
+                //var discoveryDocument = configurationManager.GetConfigurationAsync(default).Result;
+                //var signingKeys = discoveryDocument.SigningKeys;
+                
+                options.MetadataAddress = $"{issuer}/.well-known/openid-configuration";
+                options.RequireHttpsMetadata = false;
+                options.SaveToken = true;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    RequireExpirationTime = true,
+                    RequireSignedTokens = true,
+                    ValidateIssuer = true,
+                    ValidIssuer = issuer,
+                    ValidateIssuerSigningKey = true,
+                    //IssuerSigningKeys = signingKeys,
+                    ValidateLifetime = true,
+                    ValidateAudience = true,
+                    ValidAudience = "auth_server", //okta custom auth server name
+                    ClockSkew = TimeSpan.FromMinutes(2),
+                };
+            });
             
             services.AddControllers();
         }
