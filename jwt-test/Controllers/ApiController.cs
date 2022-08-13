@@ -6,15 +6,16 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.IdentityModel.Tokens;
 
 namespace jwt_test.Controllers
 {
     [ApiController]
-    [Route("api/[action]")]
+    [Route("api")]
     public class ApiController : ControllerBase
     {
-        [HttpGet(Name = "GetToken")]
+        [HttpGet("token/")]
         public JsonResult GetToken()
         {
             var strToken = GenerateToken(123, "Joe Bloggs", "joe.bloggs@jwtware.com");
@@ -29,17 +30,22 @@ namespace jwt_test.Controllers
         }
 
         [Authorize]
-        [HttpGet(Name = "CallTokenSecuredEndpoint")]
-        public JsonResult CallTokenSecuredEndpoint()
+        [HttpGet("secured/value1/{id:int}/value2/{id2:int}")]
+        public JsonResult CallTokenSecuredEndpoint([FromRoute] int id, int id2, [FromQuery] RequestModel request)
         {
             var claimsList = User.Claims.Select(c => new KeyValuePair<string, string>(c.Type, c.Value)).ToList();
             return new JsonResult(new
             {
-                HappyMessage = "Hurray you are authorized to call this endpoint and these are your claims:",
+                HappyMessage = "Hurray you are authorized to call this endpoint",
+                ParamsPassedMessage = "You passed in:",
+                Id = id,
+                Id2 = id2,
+                Request = request,
+                ClaimsMessage = "These are your JWT claims:",
                 Claims = claimsList
             });
         }
-
+        
         private string GenerateToken(int userId, string userName, string emailAddress)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(JwtConstants.SuperSecretKey));

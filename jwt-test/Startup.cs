@@ -44,6 +44,8 @@ namespace jwt_test
                         new List<string>()
                     }
                 });
+                
+                c.DescribeAllParametersInCamelCase();
             });
 
             services.AddAuthentication(x =>
