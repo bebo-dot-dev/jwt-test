@@ -4,6 +4,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
+using jwt_test.Contract;
+using jwt_test.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -15,6 +18,12 @@ namespace jwt_test.Controllers
     [Route("api")]
     public class ApiController : ControllerBase
     {
+        private readonly IServiceClient _serviceClient;
+        public ApiController(IServiceClient serviceClient)
+        {
+            _serviceClient = serviceClient;
+        }
+        
         [HttpGet("token/")]
         public JsonResult GetToken()
         {
@@ -31,8 +40,11 @@ namespace jwt_test.Controllers
 
         [Authorize]
         [HttpGet("secured/value1/{id:int}/value2/{id2:int}")]
-        public JsonResult CallTokenSecuredEndpoint([FromRoute] int id, int id2, [FromQuery] RequestModel request)
+        public async Task<JsonResult> CallTokenSecuredEndpoint([FromRoute] int id, int id2, [FromQuery] RequestModel request)
         {
+            var response = await _serviceClient.DoGet(request);
+            response = await _serviceClient.DoPost(request);
+            
             var claimsList = User.Claims.Select(c => new KeyValuePair<string, string>(c.Type, c.Value)).ToList();
             return new JsonResult(new
             {
